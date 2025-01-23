@@ -1,12 +1,14 @@
 use ffs::providers::hetzner;
 
+const DEFAULT_ACTION: &str = "ls";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    let binding = "ls".to_string();
-    let action = args.get(1).unwrap_or(&binding);
+    let default_action = DEFAULT_ACTION.to_string();
+    let action = args.get(1).unwrap_or(&default_action);
     match action.as_str() {
-        "ls" => {
+        "ls" | "list" => {
             if let Ok(jobs) = hetzner::list_jobs().await {
                 for job in jobs {
                     println!("{job:?}");
