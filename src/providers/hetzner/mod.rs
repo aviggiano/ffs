@@ -1,18 +1,16 @@
-use super::super::models::Job;
-
-use hcloud::apis::servers_api::DeleteServerParams;
-use hcloud::models::Server;
-use ssh2::Session;
+use std::error::Error;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::path::Path;
 
-use super::super::config;
+use hcloud::apis::configuration::Configuration;
+use hcloud::apis::servers_api;
+use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams};
+use hcloud::models::{CreateServerRequest, Server};
+use ssh2::Session;
 
-use hcloud::apis::servers_api::CreateServerParams;
-use hcloud::apis::{configuration::Configuration, servers_api};
-use hcloud::models::CreateServerRequest;
-use std::error::Error;
+use super::super::config;
+use super::super::models::Job;
 
 async fn list_servers() -> Result<Vec<Server>, Box<dyn std::error::Error>> {
     let mut configuration = Configuration::new();

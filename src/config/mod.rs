@@ -1,5 +1,6 @@
-use serde::Deserialize;
 use std::fs;
+
+use serde::Deserialize;
 use toml::Value;
 
 #[derive(Debug, Deserialize)]
