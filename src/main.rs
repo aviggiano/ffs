@@ -20,12 +20,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let default_name = format!("ffs-job-{}", timestamp());
             let name = args.get(2).unwrap_or(&default_name).to_string();
             println!("Starting job {name}");
-            hetzner::start_job(name).await?;
+            let job = hetzner::start_job(name).await?;
+            println!("Job {job:?} started");
         }
         "stop" => {
             let id = args.get(2).unwrap().parse::<i64>().unwrap();
             println!("Stopping job {id}");
-            hetzner::stop_job(id).await?;
+            let job = hetzner::stop_job(id).await?;
+            println!("Job {job:?} stopped");
         }
         "tail" => {
             let id = args.get(2).unwrap().parse::<i64>().unwrap();
