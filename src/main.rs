@@ -9,24 +9,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "ls" => {
             if let Ok(jobs) = hetzner::list_jobs().await {
                 for job in jobs {
-                    println!("{:?}", job);
+                    println!("{job:?}");
                 }
             }
         }
         "start" => {
             let name = args.get(2).unwrap().to_string();
-            println!("Starting job {}", name);
+            println!("Starting job {name}");
             hetzner::start_job(name).await?;
         }
         "stop" => {
             let id = args.get(2).unwrap().parse::<i64>().unwrap();
-            println!("Stopping job {}", id);
+            println!("Stopping job {id}");
             hetzner::stop_job(id).await?;
         }
         "tail" => {
             let id = args.get(2).unwrap().parse::<i64>().unwrap();
             let filename = args.get(3).unwrap();
-            println!("Fetching logs for job {} at {}", id, filename);
+            println!("Fetching logs for job {id} at {filename}");
             hetzner::tail(id, filename.to_string()).await?;
         }
         _ => {

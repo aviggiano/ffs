@@ -120,7 +120,7 @@ pub async fn tail(id: i64, filename: String) -> Result<(), Box<dyn Error>> {
     channel.read_to_string(&mut s)?;
 
     // Print the logs
-    println!("{}", s);
+    println!("{s}");
 
     // Close the channel
     channel.wait_close()?;
