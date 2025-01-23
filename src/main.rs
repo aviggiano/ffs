@@ -1,12 +1,13 @@
 use ffs::providers::hetzner;
+use ffs::utils::timestamp;
 
 const DEFAULT_ACTION: &str = "ls";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    let default_action = DEFAULT_ACTION.to_string();
-    let action = args.get(1).unwrap_or(&default_action);
+    let default = DEFAULT_ACTION.to_string();
+    let action = args.get(1).unwrap_or(&default);
     match action.as_str() {
         "ls" | "list" => {
             if let Ok(jobs) = hetzner::list_jobs().await {
@@ -16,7 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         "start" => {
-            let name = args.get(2).unwrap().to_string();
+            let default_name = format!("ffs-job-{}", timestamp());
+            let name = args.get(2).unwrap_or(&default_name).to_string();
             println!("Starting job {name}");
             hetzner::start_job(name).await?;
         }

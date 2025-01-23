@@ -10,12 +10,16 @@ use hcloud::models::CreateServerRequest;
 use ssh2::Session;
 
 use super::super::config;
+use super::super::config::Config;
 use super::super::models::Job;
+
+fn config() -> Result<Config, Box<dyn std::error::Error>> {
+    config::load_config("./config.toml")
+}
 
 pub async fn list_jobs() -> Result<Vec<Job>, Box<dyn std::error::Error>> {
     let mut configuration = Configuration::new();
-    configuration.bearer_access_token =
-        Some(config::load_config("./config.toml")?.hcloud_api_token);
+    configuration.bearer_access_token = Some(config()?.hcloud_api_token);
 
     let servers = servers_api::list_servers(&configuration, Default::default())
         .await?
@@ -34,8 +38,7 @@ pub async fn list_jobs() -> Result<Vec<Job>, Box<dyn std::error::Error>> {
 
 pub async fn get_job(id: i64) -> Result<Option<Job>, Box<dyn std::error::Error>> {
     let mut configuration = Configuration::new();
-    configuration.bearer_access_token =
-        Some(config::load_config("./config.toml")?.hcloud_api_token);
+    configuration.bearer_access_token = Some(config()?.hcloud_api_token);
 
     let server = servers_api::get_server(
         &configuration,
@@ -54,19 +57,17 @@ pub async fn get_job(id: i64) -> Result<Option<Job>, Box<dyn std::error::Error>>
 }
 
 pub async fn start_job(name: String) -> Result<Job, Box<dyn std::error::Error>> {
-    // mk_config
+    let config = config()?;
     let mut configuration = Configuration::new();
-    configuration.bearer_access_token =
-        Some(config::load_config("./config.toml")?.hcloud_api_token);
-    let private_key = Some(config::load_config("./config.toml")?.private_key);
+    configuration.bearer_access_token = Some(config.hcloud_api_token);
 
     let params = CreateServerParams {
         create_server_request: Some(CreateServerRequest {
             name,
-            image: "ubuntu-22.04".to_string(),
-            server_type: "cx11".to_string(),
-            location: Some("fsn1".to_string()),
-            ssh_keys: Some(vec![private_key.unwrap()]),
+            image: config.image,
+            server_type: config.server_type,
+            location: Some(config.location),
+            ssh_keys: Some(vec![config.ssh_key_name]),
             ..Default::default()
         }),
     };
@@ -81,9 +82,9 @@ pub async fn start_job(name: String) -> Result<Job, Box<dyn std::error::Error>> 
 }
 
 pub async fn stop_job(id: i64) -> Result<(), Box<dyn Error>> {
+    let config = config()?;
     let mut configuration = Configuration::new();
-    configuration.bearer_access_token =
-        Some(config::load_config("./config.toml")?.hcloud_api_token);
+    configuration.bearer_access_token = Some(config.hcloud_api_token);
     let params = DeleteServerParams { id };
     servers_api::delete_server(&configuration, params).await?;
 
@@ -91,10 +92,9 @@ pub async fn stop_job(id: i64) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn tail(id: i64, filename: String) -> Result<(), Box<dyn Error>> {
+    let config = config()?;
     let mut configuration = Configuration::new();
-    configuration.bearer_access_token =
-        Some(config::load_config("./config.toml")?.hcloud_api_token);
-    let private_key = Some(config::load_config("./config.toml")?.private_key);
+    configuration.bearer_access_token = Some(config.hcloud_api_token);
 
     let job = get_job(id).await?;
 
@@ -105,12 +105,7 @@ pub async fn tail(id: i64, filename: String) -> Result<(), Box<dyn Error>> {
     sess.handshake()?;
 
     // Authenticate using a private key
-    sess.userauth_pubkey_file(
-        "root",
-        None,
-        Path::new(private_key.as_deref().unwrap()),
-        None,
-    )?;
+    sess.userauth_pubkey_file("root", None, Path::new(&config.ssh_key_path), None)?;
 
     // Open a channel
     let mut channel = sess.channel_session()?;
