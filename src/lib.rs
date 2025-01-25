@@ -1,7 +1,4 @@
-pub mod providers {
-    pub mod aws;
-    pub mod hetzner;
-}
 pub mod config;
-pub mod models;
+pub mod jobs;
+pub mod providers;
 pub mod utils;

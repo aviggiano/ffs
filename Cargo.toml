@@ -9,6 +9,7 @@ serde = { version = "1", features = ["derive"] }
 ssh2 = "0.9"
 tokio = { version = "1", features = ["full"] }
 toml = "0.5"
+async-trait = "0.1"
 
 [dev-dependencies]
 clippy = { version = "0.0.302" }

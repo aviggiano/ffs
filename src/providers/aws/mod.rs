@@ -1,11 +1,40 @@
-use std::error::Error;
+use crate::jobs::Job;
+use crate::providers::Provider;
 
-use super::super::models::Job;
+pub struct AWSProvider {}
 
-pub fn list_jobs() -> Result<Vec<Job>, Box<dyn std::error::Error>> {
-    Ok(vec![])
+impl AWSProvider {
+    pub fn new() -> Self {
+        Self {}
+    }
 }
 
-pub async fn stop_job(_id: i64) -> Result<(), Box<dyn Error>> {
-    Ok(())
+impl Provider for AWSProvider {
+    async fn start_job(&self, job_id: &str) -> Result<Job, Box<dyn std::error::Error>> {
+        Ok(Job {
+            id: job_id.to_string(),
+            ipv4: "".to_string(),
+            name: None,
+        })
+    }
+
+    async fn get_job(&self, _job_id: &str) -> Result<Option<Job>, Box<dyn std::error::Error>> {
+        Ok(None)
+    }
+
+    async fn stop_job(&self, job_id: &str) -> Result<Job, Box<dyn std::error::Error>> {
+        Ok(Job {
+            id: job_id.to_string(),
+            ipv4: "".to_string(),
+            name: None,
+        })
+    }
+
+    async fn list_jobs(&self) -> Result<Vec<Job>, Box<dyn std::error::Error>> {
+        Ok(vec![])
+    }
+
+    async fn tail(&self, _job_id: &str, _filename: &str) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
 }
