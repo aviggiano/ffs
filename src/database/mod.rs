@@ -22,7 +22,9 @@ impl Database {
 
 impl Database {
     pub fn load(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // parse toml as key-value store
+        if !fs::metadata(&self.filename).is_ok() {
+            fs::File::create(&self.filename)?;
+        }
         let contents = fs::read_to_string(&self.filename)?;
         let value = contents.parse::<Value>()?;
         let table = value.as_table().unwrap();

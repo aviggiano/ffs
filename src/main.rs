@@ -25,7 +25,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         "init" => {
             let provider_name = args
                 .get(2)
-                .unwrap_or(&DEFAULT_PROVIDER.to_string())
+                .map(String::as_str)
+                .unwrap_or(DEFAULT_PROVIDER)
                 .to_string();
             database.set("provider", &provider_name)?;
         }
