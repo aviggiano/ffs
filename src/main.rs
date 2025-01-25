@@ -1,3 +1,4 @@
+use ffs::database::Database;
 use ffs::providers::{aws, hetzner, Provider};
 use ffs::utils::timestamp;
 
@@ -6,18 +7,27 @@ const DEFAULT_PROVIDER: &str = "hetzner";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let mut database = Database::new();
+
     let args: Vec<String> = std::env::args().collect();
     let default_action = DEFAULT_ACTION.to_string();
     let action = args.get(1).unwrap_or(&default_action);
-    let default_provider = DEFAULT_PROVIDER.to_string();
-    let provider = match args.get(2).unwrap_or(&default_provider).as_str() {
+    let provider = match database
+        .get("provider")
+        .unwrap_or_else(|| DEFAULT_PROVIDER.to_string())
+        .as_str()
+    {
         "hetzner" => Box::new(hetzner::HetznerProvider::new()) as Box<dyn Provider>,
         "aws" => Box::new(aws::AWSProvider::new()) as Box<dyn Provider>,
         _ => return Err("Invalid provider".into()),
     };
     match action.as_str() {
         "init" => {
-            println!("Initializing provider...");
+            let provider_name = args
+                .get(2)
+                .unwrap_or(&DEFAULT_PROVIDER.to_string())
+                .to_string();
+            database.set("provider", &provider_name)?;
         }
         "ls" | "list" => {
             if let Ok(jobs) = provider.list_jobs().await {
