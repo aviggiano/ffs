@@ -1,8 +1,8 @@
-use std::error::Error;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::path::Path;
 
+use async_trait::async_trait;
 use hcloud::apis::configuration::Configuration;
 use hcloud::apis::servers_api;
 use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams};
@@ -14,8 +14,9 @@ use super::super::config::Config;
 use super::Provider;
 use crate::jobs::Job;
 
+#[async_trait]
 impl Provider for HetznerProvider {
-    async fn start_job(&self, name: &str) -> Result<Job, Box<dyn std::error::Error>> {
+    async fn start_job(&self, name: &str) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
         let config = config()?;
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
@@ -41,7 +42,10 @@ impl Provider for HetznerProvider {
         Ok(job)
     }
 
-    async fn get_job(&self, id: &str) -> Result<Option<Job>, Box<dyn std::error::Error>> {
+    async fn get_job(
+        &self,
+        id: &str,
+    ) -> Result<Option<Job>, Box<dyn std::error::Error + Send + Sync>> {
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config()?.hcloud_api_token);
 
@@ -64,7 +68,10 @@ impl Provider for HetznerProvider {
         }
     }
 
-    async fn stop_job(&self, job_id: &str) -> Result<Job, Box<dyn std::error::Error>> {
+    async fn stop_job(
+        &self,
+        job_id: &str,
+    ) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
         let config = config()?;
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
@@ -80,7 +87,7 @@ impl Provider for HetznerProvider {
         })
     }
 
-    async fn list_jobs(&self) -> Result<Vec<Job>, Box<dyn std::error::Error>> {
+    async fn list_jobs(&self) -> Result<Vec<Job>, Box<dyn std::error::Error + Send + Sync>> {
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config()?.hcloud_api_token);
 
@@ -100,7 +107,11 @@ impl Provider for HetznerProvider {
         Ok(jobs)
     }
 
-    async fn tail(&self, id: &str, filename: &str) -> Result<(), Box<dyn Error>> {
+    async fn tail(
+        &self,
+        id: &str,
+        filename: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let config = config()?;
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
@@ -137,7 +148,7 @@ impl Provider for HetznerProvider {
     }
 }
 
-fn config() -> Result<Config, Box<dyn std::error::Error>> {
+fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     config::load_config("./config.toml")
 }
 pub struct HetznerProvider {}

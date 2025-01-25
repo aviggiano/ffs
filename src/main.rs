@@ -5,14 +5,14 @@ const DEFAULT_ACTION: &str = "ls";
 const DEFAULT_PROVIDER: &str = "hetzner";
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let args: Vec<String> = std::env::args().collect();
     let default_action = DEFAULT_ACTION.to_string();
     let action = args.get(1).unwrap_or(&default_action);
     let default_provider = DEFAULT_PROVIDER.to_string();
     let provider = match args.get(2).unwrap_or(&default_provider).as_str() {
-        "hetzner" => hetzner::HetznerProvider::new(),
-        // "aws" => aws::AWSProvider::new(),
+        "hetzner" => Box::new(hetzner::HetznerProvider::new()) as Box<dyn Provider>,
+        "aws" => Box::new(aws::AWSProvider::new()) as Box<dyn Provider>,
         _ => return Err("Invalid provider".into()),
     };
     match action.as_str() {

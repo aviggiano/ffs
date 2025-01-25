@@ -13,32 +13,50 @@ pub struct Config {
     pub location: String,
 }
 
-pub fn load_config(file_path: &str) -> Result<Config, Box<dyn std::error::Error>> {
+#[derive(Debug)]
+struct ConfigError(String);
+
+impl std::error::Error for ConfigError {}
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+pub fn load_config(file_path: &str) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     let contents = fs::read_to_string(file_path)?;
     let value = contents.parse::<Value>()?;
     let hcloud_api_token = value["hcloud_token"]
         .as_str()
-        .ok_or("hcloud_token not found or not a string")?
+        .ok_or(ConfigError(
+            "hcloud_token not found or not a string".to_string(),
+        ))?
         .to_string();
     let ssh_key_path = value["ssh_key_path"]
         .as_str()
-        .ok_or("ssh_key not found or not a string")?
+        .ok_or(ConfigError("ssh_key not found or not a string".to_string()))?
         .to_string();
     let ssh_key_name = value["ssh_key_name"]
         .as_str()
-        .ok_or("ssh_key_name not found or not a string")?
+        .ok_or(ConfigError(
+            "ssh_key_name not found or not a string".to_string(),
+        ))?
         .to_string();
     let image = value["image"]
         .as_str()
-        .ok_or("image not found or not a string")?
+        .ok_or(ConfigError("image not found or not a string".to_string()))?
         .to_string();
     let server_type = value["server_type"]
         .as_str()
-        .ok_or("server_type not found or not a string")?
+        .ok_or(ConfigError(
+            "server_type not found or not a string".to_string(),
+        ))?
         .to_string();
     let location = value["location"]
         .as_str()
-        .ok_or("location not found or not a string")?
+        .ok_or(ConfigError(
+            "location not found or not a string".to_string(),
+        ))?
         .to_string();
 
     Ok(Config {
