@@ -24,5 +24,17 @@ pub trait Provider: Send + Sync {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
+pub struct ProviderFactory;
+
+impl ProviderFactory {
+    pub fn new(name: &str) -> Box<dyn Provider> {
+        match name {
+            "hetzner" => Box::new(hetzner::HetznerProvider::new()),
+            "aws" => Box::new(aws::AWSProvider::new()),
+            _ => panic!("Invalid provider"),
+        }
+    }
+}
+
 pub mod aws;
 pub mod hetzner;

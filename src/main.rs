@@ -1,5 +1,5 @@
 use ffs::database::Database;
-use ffs::providers::{aws, hetzner, Provider};
+use ffs::providers::ProviderFactory;
 use ffs::utils::timestamp;
 
 const DEFAULT_ACTION: &str = "ls";
@@ -17,9 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .unwrap_or_else(|| DEFAULT_PROVIDER.to_string())
         .as_str()
     {
-        "hetzner" => Box::new(hetzner::HetznerProvider::new()) as Box<dyn Provider>,
-        "aws" => Box::new(aws::AWSProvider::new()) as Box<dyn Provider>,
-        _ => return Err("Invalid provider".into()),
+        provider_name => ProviderFactory::new(provider_name),
     };
     match action.as_str() {
         "init" => {
