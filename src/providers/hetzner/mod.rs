@@ -39,6 +39,13 @@ impl Provider for HetznerProvider {
             name: Some(name.to_string()),
         };
 
+        let ip = job.ipv4.clone();
+        let key_path = config.ssh_key_path.clone();
+        let provider = self.clone();
+        tokio::spawn(async move {
+            let _ = provider.install_dependencies(&ip, &key_path).await;
+        });
+
         Ok(job)
     }
 
@@ -151,6 +158,7 @@ impl Provider for HetznerProvider {
 fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     config::load_config("./config.toml")
 }
+#[derive(Clone)]
 pub struct HetznerProvider {}
 
 impl HetznerProvider {
