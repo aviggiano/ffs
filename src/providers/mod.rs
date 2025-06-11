@@ -1,6 +1,44 @@
 use async_trait::async_trait;
 
 use crate::jobs::Job;
+use ssh2::Session;
+use std::io::prelude::*;
+use std::net::TcpStream;
+use std::path::Path;
+
+const INSTALL_SCRIPT: &str = r#"#!/bin/bash
+set -e
+apt-get update
+apt-get install -y curl git build-essential pkg-config libssl-dev
+curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+apt-get install -y nodejs
+curl https://sh.rustup.rs -sSf | sh -s -- -y
+source "$HOME/.cargo/env"
+curl -L https://foundry.paradigm.xyz | bash
+"$HOME"/.foundry/bin/foundryup
+"$HOME"/.cargo/bin/cargo install --locked echidna
+"$HOME"/.cargo/bin/cargo install --locked --git https://github.com/crytic/medusa
+"$HOME"/.cargo/bin/cargo install --locked --git https://github.com/crytic/halmos
+"#;
+
+fn install_over_ssh(
+    ip: &str,
+    key_path: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let tcp = TcpStream::connect((ip, 22))?;
+    let mut sess = Session::new()?;
+    sess.set_tcp_stream(tcp);
+    sess.handshake()?;
+    sess.userauth_pubkey_file("root", None, Path::new(key_path), None)?;
+
+    let mut channel = sess.channel_session()?;
+    channel.exec("bash -s")?;
+    channel.write_all(INSTALL_SCRIPT.as_bytes())?;
+    channel.send_eof()?;
+    channel.wait_close()?;
+
+    Ok(())
+}
 
 pub enum ProviderType {
     Hetzner,
@@ -22,6 +60,17 @@ pub trait Provider: Send + Sync {
         job_id: &str,
         filename: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    async fn install_dependencies(
+        &self,
+        ip: &str,
+        key_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let ip = ip.to_string();
+        let key = key_path.to_string();
+        tokio::task::spawn_blocking(move || install_over_ssh(&ip, &key)).await??;
+        Ok(())
+    }
 }
 
 pub mod aws;
