@@ -56,6 +56,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("Fetching logs for job {id} at {filename}");
             provider.tail(&id, &filename).await?;
         }
+        "ssh" => {
+            let id = args.get(2).unwrap().to_string();
+            match provider.get_job(&id).await? {
+                Some(job) => {
+                    println!("Connecting to {}", job.ipv4);
+                    std::process::Command::new("ssh")
+                        .arg(format!("root@{}", job.ipv4))
+                        .status()?;
+                }
+                None => println!("Job {id} not found"),
+            }
+        }
         _ => {
             println!("Invalid action");
         }
