@@ -53,4 +53,13 @@ impl Provider for AWSProvider {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Ok(())
     }
+
+    async fn scp(
+        &self,
+        _job_id: &str,
+        _filename: &str,
+        _destination: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        Ok(())
+    }
 }

@@ -1,8 +1,6 @@
-use std::fs;
-
 use serde::Deserialize;
-use toml::Value;
 
+use crate::database::Database;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub hcloud_api_token: String,
@@ -11,60 +9,28 @@ pub struct Config {
     pub image: String,
     pub server_type: String,
     pub location: String,
+    pub user_data: String,
 }
 
-#[derive(Debug)]
-struct ConfigError(String);
+impl Config {
+    pub fn new() -> Self {
+        let database = Database::new();
+        let hcloud_api_token = database.get("hcloud_token").unwrap_or_default();
+        let ssh_key_path = database.get("ssh_key_path").unwrap_or_default();
+        let ssh_key_name = database.get("ssh_key_name").unwrap_or_default();
+        let image = database.get("image").unwrap_or_default();
+        let server_type = database.get("server_type").unwrap_or_default();
+        let location = database.get("location").unwrap_or_default();
+        let user_data = database.get("user_data").unwrap_or_default();
 
-impl std::error::Error for ConfigError {}
-impl std::fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        Config {
+            hcloud_api_token,
+            ssh_key_path,
+            ssh_key_name,
+            image,
+            server_type,
+            location,
+            user_data,
+        }
     }
-}
-
-pub fn load_config(file_path: &str) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    let contents = fs::read_to_string(file_path)?;
-    let value = contents.parse::<Value>()?;
-    let hcloud_api_token = value["hcloud_token"]
-        .as_str()
-        .ok_or(ConfigError(
-            "hcloud_token not found or not a string".to_string(),
-        ))?
-        .to_string();
-    let ssh_key_path = value["ssh_key_path"]
-        .as_str()
-        .ok_or(ConfigError("ssh_key not found or not a string".to_string()))?
-        .to_string();
-    let ssh_key_name = value["ssh_key_name"]
-        .as_str()
-        .ok_or(ConfigError(
-            "ssh_key_name not found or not a string".to_string(),
-        ))?
-        .to_string();
-    let image = value["image"]
-        .as_str()
-        .ok_or(ConfigError("image not found or not a string".to_string()))?
-        .to_string();
-    let server_type = value["server_type"]
-        .as_str()
-        .ok_or(ConfigError(
-            "server_type not found or not a string".to_string(),
-        ))?
-        .to_string();
-    let location = value["location"]
-        .as_str()
-        .ok_or(ConfigError(
-            "location not found or not a string".to_string(),
-        ))?
-        .to_string();
-
-    Ok(Config {
-        hcloud_api_token,
-        ssh_key_path,
-        ssh_key_name,
-        image,
-        server_type,
-        location,
-    })
 }

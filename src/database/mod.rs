@@ -4,6 +4,9 @@ use std::io::Write;
 
 use toml::Value;
 
+const DATABASE_DIR: &str = ".ffs";
+const DATABASE_FILENAME: &str = "database.toml";
+
 pub struct Database {
     filename: String,
     data: HashMap<String, String>,
@@ -12,7 +15,7 @@ pub struct Database {
 impl Database {
     pub fn new() -> Self {
         let mut db = Self {
-            filename: "database.toml".to_string(),
+            filename: DATABASE_FILENAME.to_string(),
             data: HashMap::new(),
         };
         db.load().unwrap();
@@ -22,10 +25,20 @@ impl Database {
 
 impl Database {
     pub fn load(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        if !fs::metadata(&self.filename).is_ok() {
-            fs::File::create(&self.filename)?;
+        let home = std::env::var("HOME").unwrap();
+        let database_dir = format!("{}/{}", home, DATABASE_DIR);
+        let database_file = format!("{}/{}", database_dir, DATABASE_FILENAME);
+        // create the database directory if it doesn't exist
+        if !fs::metadata(&database_dir).is_ok() {
+            println!("Creating database directory: {}", database_dir);
+            fs::create_dir_all(database_dir)?;
         }
-        let contents = fs::read_to_string(&self.filename)?;
+        // create the database file if it doesn't exist
+        if !fs::metadata(&database_file).is_ok() {
+            println!("Creating database file: {}", database_file);
+            fs::File::create(&database_file)?;
+        }
+        let contents = fs::read_to_string(&database_file)?;
         let value = contents.parse::<Value>()?;
         let table = value.as_table().unwrap();
         self.data = table

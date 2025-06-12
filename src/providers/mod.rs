@@ -22,6 +22,12 @@ pub trait Provider: Send + Sync {
         job_id: &str,
         filename: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+    async fn scp(
+        &self,
+        job_id: &str,
+        filename: &str,
+        destination: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
 }
 
 pub struct ProviderFactory;

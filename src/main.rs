@@ -51,6 +51,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("Fetching logs for job {id} at {filename}");
             provider.tail(&id, &filename).await?;
         }
+        "scp" => {
+            let id = args.get(2).unwrap().to_string();
+            let filename = args.get(3).unwrap().to_string();
+            let destination = args.get(4).unwrap().to_string();
+            println!("Copying {filename} to {destination} for job {id}");
+            provider.scp(&id, &filename, &destination).await?;
+        }
         _ => {
             println!("Invalid action");
         }

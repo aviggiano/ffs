@@ -25,7 +25,4 @@ Cargo.lock
 /target
 
 # Config
-config.toml
-
-# Database
-database.toml
+.vscode

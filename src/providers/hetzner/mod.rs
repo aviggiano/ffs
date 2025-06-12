@@ -9,7 +9,6 @@ use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams};
 use hcloud::models::CreateServerRequest;
 use ssh2::Session;
 
-use super::super::config;
 use super::super::config::Config;
 use super::Provider;
 use crate::jobs::Job;
@@ -17,7 +16,7 @@ use crate::jobs::Job;
 #[async_trait]
 impl Provider for HetznerProvider {
     async fn start_job(&self, name: &str) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
-        let config = config()?;
+        let config = Config::new();
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
 
@@ -28,6 +27,7 @@ impl Provider for HetznerProvider {
                 server_type: config.server_type,
                 location: Some(config.location),
                 ssh_keys: Some(vec![config.ssh_key_name]),
+                user_data: Some(config.user_data),
                 ..Default::default()
             }),
         };
@@ -46,8 +46,9 @@ impl Provider for HetznerProvider {
         &self,
         id: &str,
     ) -> Result<Option<Job>, Box<dyn std::error::Error + Send + Sync>> {
+        let config = Config::new();
         let mut configuration = Configuration::new();
-        configuration.bearer_access_token = Some(config()?.hcloud_api_token);
+        configuration.bearer_access_token = Some(config.hcloud_api_token);
 
         let server = servers_api::get_server(
             &configuration,
@@ -72,7 +73,7 @@ impl Provider for HetznerProvider {
         &self,
         job_id: &str,
     ) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
-        let config = config()?;
+        let config = Config::new();
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
         let params = DeleteServerParams {
@@ -88,8 +89,9 @@ impl Provider for HetznerProvider {
     }
 
     async fn list_jobs(&self) -> Result<Vec<Job>, Box<dyn std::error::Error + Send + Sync>> {
+        let config = Config::new();
         let mut configuration = Configuration::new();
-        configuration.bearer_access_token = Some(config()?.hcloud_api_token);
+        configuration.bearer_access_token = Some(config.hcloud_api_token);
 
         let servers = servers_api::list_servers(&configuration, Default::default())
             .await?
@@ -112,14 +114,14 @@ impl Provider for HetznerProvider {
         id: &str,
         filename: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let config = config()?;
+        let config = Config::new();
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
 
         let job = self.get_job(id).await?;
 
         let ipv4 = job.unwrap().ipv4;
-        let tcp = TcpStream::connect((ipv4, 22))?;
+        let tcp = TcpStream::connect((ipv4.clone(), 22))?;
         let mut sess = Session::new()?;
         sess.set_tcp_stream(tcp);
         sess.handshake()?;
@@ -146,11 +148,56 @@ impl Provider for HetznerProvider {
 
         Ok(())
     }
+
+    async fn scp(
+        &self,
+        id: &str,
+        filename: &str,
+        destination: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let config = Config::new();
+        let mut configuration = Configuration::new();
+        configuration.bearer_access_token = Some(config.hcloud_api_token);
+
+        let job = self.get_job(id).await?;
+
+        let ipv4 = job.unwrap().ipv4;
+        let tcp = TcpStream::connect((ipv4.clone(), 22))?;
+        let mut sess = Session::new()?;
+        sess.set_tcp_stream(tcp);
+        sess.handshake()?;
+
+        let mut channel = sess.channel_session()?;
+        channel.exec(&format!(
+            "scp -r root@{}:{} {}",
+            ipv4, filename, destination
+        ))?;
+
+        // Read and print output in real-time
+        let mut buffer = [0; 1024];
+        loop {
+            match channel.read(&mut buffer) {
+                Ok(0) => break,
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]);
+                    print!("{}", output);
+                }
+                Err(e) => {
+                    if e.kind() == std::io::ErrorKind::WouldBlock {
+                        continue;
+                    }
+                    return Err(Box::new(e));
+                }
+            }
+        }
+
+        channel.wait_close()?;
+        println!("{}", channel.exit_status()?);
+
+        Ok(())
+    }
 }
 
-fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    config::load_config("./config.toml")
-}
 pub struct HetznerProvider {}
 
 impl HetznerProvider {
