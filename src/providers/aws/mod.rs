@@ -85,10 +85,10 @@ impl Provider for AWSProvider {
             name: Some(name.to_string()),
         };
 
-        let provider = self.clone();
         let key_path = cfg.ssh_key_path.clone();
         tokio::spawn(async move {
-            let _ = provider.install_dependencies(&ipv4, &key_path).await;
+            let _ = tokio::task::spawn_blocking(move || super::install_over_ssh(&ipv4, &key_path))
+                .await;
         });
 
         Ok(job)
@@ -224,5 +224,5 @@ impl Provider for AWSProvider {
 }
 
 fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    config::load_config("./config.toml")
+    Ok(Config::new())
 }
