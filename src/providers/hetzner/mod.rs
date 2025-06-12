@@ -9,8 +9,9 @@ use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams};
 use hcloud::models::CreateServerRequest;
 use ssh2::Session;
 
-use super::super::config::Config;
 use super::Provider;
+use crate::config;
+use crate::config::Config;
 use crate::jobs::Job;
 
 #[async_trait]
@@ -209,6 +210,7 @@ fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Config::new())
 }
 
+#[derive(Clone)]
 pub struct HetznerProvider {}
 
 impl HetznerProvider {

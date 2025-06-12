@@ -67,6 +67,17 @@ pub trait Provider: Send + Sync {
         filename: &str,
         destination: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
+    async fn install_dependencies(
+        &self,
+        ip: &str,
+        key_path: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let ip = ip.to_string();
+        let key = key_path.to_string();
+        tokio::task::spawn_blocking(move || install_over_ssh(&ip, &key)).await??;
+        Ok(())
+    }
 }
 
 pub struct ProviderFactory;
@@ -78,17 +89,6 @@ impl ProviderFactory {
             "aws" => Box::new(aws::AWSProvider::new()),
             _ => panic!("Invalid provider"),
         }
-    }
-
-    async fn install_dependencies(
-        &self,
-        ip: &str,
-        key_path: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let ip = ip.to_string();
-        let key = key_path.to_string();
-        tokio::task::spawn_blocking(move || install_over_ssh(&ip, &key)).await??;
-        Ok(())
     }
 }
 

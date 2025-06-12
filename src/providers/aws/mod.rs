@@ -10,9 +10,9 @@ use aws_sdk_ec2::types::{InstanceType, ResourceType, Tag, TagSpecification};
 use aws_sdk_ec2::Client;
 use ssh2::Session;
 
-use super::super::config;
-use super::super::config::Config;
 use super::Provider;
+use crate::config;
+use crate::config::Config;
 use crate::jobs::Job;
 
 #[derive(Clone)]

@@ -34,3 +34,7 @@ impl Config {
         }
     }
 }
+
+pub fn load_config(_config_path: &str) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
+    Ok(Config::new())
+}
