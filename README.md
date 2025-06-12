@@ -2,6 +2,15 @@
 
 ffs is a Fast Fuzzing Service CLI that runs your campaigns on the cloud.
 
+## Installation
+
+Install the latest released binary directly from crates.io:
+
+```bash
+cargo install ffs
+```
+
+
 ## SSH into a job
 
 After listing jobs with `ffs ls`, you can quickly connect to one by ID:
