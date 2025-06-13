@@ -11,15 +11,21 @@ use aws_sdk_ec2::Client;
 use ssh2::Session;
 
 use super::Provider;
-use crate::config;
 use crate::config::Config;
 use crate::jobs::Job;
 
 #[derive(Clone)]
 pub struct AWSProvider {}
 
+impl Default for AWSProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AWSProvider {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {}
     }
 }
@@ -27,7 +33,7 @@ impl AWSProvider {
 #[async_trait]
 impl Provider for AWSProvider {
     async fn start_job(&self, name: &str) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
-        let cfg = config()?;
+        let cfg = config();
 
         let region_provider =
             RegionProviderChain::first_try(Some(Region::new(cfg.location.clone())))
@@ -98,7 +104,7 @@ impl Provider for AWSProvider {
         &self,
         job_id: &str,
     ) -> Result<Option<Job>, Box<dyn std::error::Error + Send + Sync>> {
-        let cfg = config()?;
+        let cfg = config();
         let region_provider =
             RegionProviderChain::first_try(Some(Region::new(cfg.location.clone())))
                 .or_default_provider();
@@ -135,7 +141,7 @@ impl Provider for AWSProvider {
         &self,
         job_id: &str,
     ) -> Result<Job, Box<dyn std::error::Error + Send + Sync>> {
-        let cfg = config()?;
+        let cfg = config();
         let region_provider =
             RegionProviderChain::first_try(Some(Region::new(cfg.location.clone())))
                 .or_default_provider();
@@ -156,7 +162,7 @@ impl Provider for AWSProvider {
     }
 
     async fn list_jobs(&self) -> Result<Vec<Job>, Box<dyn std::error::Error + Send + Sync>> {
-        let cfg = config()?;
+        let cfg = config();
         let region_provider =
             RegionProviderChain::first_try(Some(Region::new(cfg.location.clone())))
                 .or_default_provider();
@@ -191,7 +197,7 @@ impl Provider for AWSProvider {
         job_id: &str,
         filename: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let cfg = config()?;
+        let cfg = config();
 
         if let Some(job) = self.get_job(job_id).await? {
             let tcp = TcpStream::connect((job.ipv4.as_str(), 22))?;
@@ -201,7 +207,7 @@ impl Provider for AWSProvider {
             sess.userauth_pubkey_file("root", None, Path::new(&cfg.ssh_key_path), None)?;
 
             let mut channel = sess.channel_session()?;
-            channel.exec(&format!("cat {}", filename))?;
+            channel.exec(&format!("cat {filename}"))?;
 
             let mut s = String::new();
             channel.read_to_string(&mut s)?;
@@ -223,6 +229,6 @@ impl Provider for AWSProvider {
     }
 }
 
-fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    Ok(Config::new())
+fn config() -> Config {
+    Config::new()
 }

@@ -12,7 +12,14 @@ pub struct Config {
     pub user_data: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
+    #[must_use]
     pub fn new() -> Self {
         let database = Database::new();
         let hcloud_api_token = database.get("hcloud_token").unwrap_or_default();
@@ -23,7 +30,7 @@ impl Config {
         let location = database.get("location").unwrap_or_default();
         let user_data = database.get("user_data").unwrap_or_default();
 
-        Config {
+        Self {
             hcloud_api_token,
             ssh_key_path,
             ssh_key_name,
@@ -35,6 +42,11 @@ impl Config {
     }
 }
 
+/// Loads configuration from a config file path.
+///
+/// # Errors
+///
+/// This function will return an error if the config cannot be loaded.
 pub fn load_config(_config_path: &str) -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
     Ok(Config::new())
 }
