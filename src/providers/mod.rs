@@ -83,7 +83,13 @@ pub trait Provider: Send + Sync {
 pub struct ProviderFactory;
 
 impl ProviderFactory {
-    pub fn new(name: &str) -> Box<dyn Provider> {
+    /// Creates a new provider instance based on the provider name.
+    ///
+    /// # Panics
+    ///
+    /// Panics if an invalid provider name is provided.
+    #[must_use]
+    pub fn create_provider(name: &str) -> Box<dyn Provider> {
         match name {
             "hetzner" => Box::new(hetzner::HetznerProvider::new()),
             "aws" => Box::new(aws::AWSProvider::new()),

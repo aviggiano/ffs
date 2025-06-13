@@ -9,8 +9,8 @@ const DEFAULT_JOB_NAME_PREFIX: &str = "ffs-job-";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut database = Database::new();
-    let provider = ProviderFactory::new(
-        &database
+    let provider = ProviderFactory::create_provider(
+        database
             .get("provider")
             .unwrap_or_else(|| DEFAULT_PROVIDER.to_string())
             .as_str(),
@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         "init" => {
             let default_provider = DEFAULT_PROVIDER.to_string();
             let provider_name = args.get(2).unwrap_or(&default_provider);
-            database.set("provider", &provider_name)?;
+            database.set("provider", provider_name)?;
         }
         "ls" | "list" => {
             if let Ok(jobs) = provider.list_jobs().await {
