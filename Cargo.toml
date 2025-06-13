@@ -13,8 +13,8 @@ async-trait = "0.1"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-sdk-ec2 = "1"
 
+
 [dev-dependencies]
-clippy = { version = "0.0.302" }
 
 [lints.clippy]
 all = "warn"

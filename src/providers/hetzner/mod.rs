@@ -5,12 +5,12 @@ use std::path::Path;
 use async_trait::async_trait;
 use hcloud::apis::configuration::Configuration;
 use hcloud::apis::servers_api;
-use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams};
+use hcloud::apis::servers_api::{CreateServerParams, DeleteServerParams, ListServersParams};
 use hcloud::models::CreateServerRequest;
 use ssh2::Session;
 
-use super::super::config::Config;
 use super::Provider;
+use crate::config::Config;
 use crate::jobs::Job;
 
 #[async_trait]
@@ -41,9 +41,9 @@ impl Provider for HetznerProvider {
 
         let ip = job.ipv4.clone();
         let key_path = config.ssh_key_path.clone();
-        let provider = self.clone();
         tokio::spawn(async move {
-            let _ = provider.install_dependencies(&ip, &key_path).await;
+            let _ =
+                tokio::task::spawn_blocking(move || super::install_over_ssh(&ip, &key_path)).await;
         });
 
         Ok(job)
@@ -66,14 +66,16 @@ impl Provider for HetznerProvider {
         .await?
         .server;
 
-        match server {
-            Some(server) => Ok(Some(Job {
-                id: server.id.to_string(),
-                ipv4: server.public_net.ipv4.unwrap().ip,
-                name: Some(server.name),
-            })),
-            None => Ok(None),
-        }
+        server.map_or_else(
+            || Ok(None),
+            |server| {
+                Ok(Some(Job {
+                    id: server.id.to_string(),
+                    ipv4: server.public_net.ipv4.unwrap().ip,
+                    name: Some(server.name),
+                }))
+            },
+        )
     }
 
     async fn stop_job(
@@ -90,7 +92,7 @@ impl Provider for HetznerProvider {
 
         Ok(Job {
             id: job_id.to_string(),
-            ipv4: "".to_string(),
+            ipv4: String::new(),
             name: None,
         })
     }
@@ -100,7 +102,7 @@ impl Provider for HetznerProvider {
         let mut configuration = Configuration::new();
         configuration.bearer_access_token = Some(config.hcloud_api_token);
 
-        let servers = servers_api::list_servers(&configuration, Default::default())
+        let servers = servers_api::list_servers(&configuration, ListServersParams::default())
             .await?
             .servers;
 
@@ -128,7 +130,7 @@ impl Provider for HetznerProvider {
         let job = self.get_job(id).await?;
 
         let ipv4 = job.unwrap().ipv4;
-        let tcp = TcpStream::connect((ipv4.clone(), 22))?;
+        let tcp = TcpStream::connect((ipv4.as_str(), 22))?;
         let mut sess = Session::new()?;
         sess.set_tcp_stream(tcp);
         sess.handshake()?;
@@ -169,16 +171,13 @@ impl Provider for HetznerProvider {
         let job = self.get_job(id).await?;
 
         let ipv4 = job.unwrap().ipv4;
-        let tcp = TcpStream::connect((ipv4.clone(), 22))?;
+        let tcp = TcpStream::connect((ipv4.as_str(), 22))?;
         let mut sess = Session::new()?;
         sess.set_tcp_stream(tcp);
         sess.handshake()?;
 
         let mut channel = sess.channel_session()?;
-        channel.exec(&format!(
-            "scp -r root@{}:{} {}",
-            ipv4, filename, destination
-        ))?;
+        channel.exec(&format!("scp -r root@{ipv4}:{filename} {destination}"))?;
 
         // Read and print output in real-time
         let mut buffer = [0; 1024];
@@ -187,7 +186,7 @@ impl Provider for HetznerProvider {
                 Ok(0) => break,
                 Ok(n) => {
                     let output = String::from_utf8_lossy(&buffer[..n]);
-                    print!("{}", output);
+                    print!("{output}");
                 }
                 Err(e) => {
                     if e.kind() == std::io::ErrorKind::WouldBlock {
@@ -205,14 +204,18 @@ impl Provider for HetznerProvider {
     }
 }
 
-fn config() -> Result<Config, Box<dyn std::error::Error + Send + Sync>> {
-    config::load_config("./config.toml")
-}
-
+#[derive(Clone)]
 pub struct HetznerProvider {}
 
+impl Default for HetznerProvider {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HetznerProvider {
-    pub fn new() -> Self {
+    #[must_use]
+    pub const fn new() -> Self {
         Self {}
     }
 }
