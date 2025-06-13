@@ -63,7 +63,7 @@ enum Commands {
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let cli = Cli::parse();
     let mut database = Database::new();
-    
+
     let provider = ProviderFactory::create_provider(
         database
             .get("provider")
@@ -72,7 +72,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     );
 
     match cli.command.unwrap_or(Commands::List) {
-        Commands::Init { provider: provider_name } => {
+        Commands::Init {
+            provider: provider_name,
+        } => {
             database.set("provider", &provider_name)?;
             println!("Provider set to: {provider_name}");
         }
@@ -84,7 +86,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
         }
         Commands::Start { name } => {
-            let job_name = name.unwrap_or_else(|| format!("{DEFAULT_JOB_NAME_PREFIX}{}", timestamp()));
+            let job_name =
+                name.unwrap_or_else(|| format!("{DEFAULT_JOB_NAME_PREFIX}{}", timestamp()));
             println!("Starting job {job_name}");
             let job = provider.start_job(&job_name).await?;
             println!("Job {job:?} started");
@@ -98,21 +101,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             println!("Fetching logs for job {id} at {filename}");
             provider.tail(&id, &filename).await?;
         }
-        Commands::Scp { id, filename, destination } => {
+        Commands::Scp {
+            id,
+            filename,
+            destination,
+        } => {
             println!("Copying {filename} to {destination} for job {id}");
             provider.scp(&id, &filename, &destination).await?;
         }
-        Commands::Ssh { id } => {
-            match provider.get_job(&id).await? {
-                Some(job) => {
-                    println!("Connecting to {}", job.ipv4);
-                    std::process::Command::new("ssh")
-                        .arg(format!("root@{}", job.ipv4))
-                        .status()?;
-                }
-                None => println!("Job {id} not found"),
+        Commands::Ssh { id } => match provider.get_job(&id).await? {
+            Some(job) => {
+                println!("Connecting to {}", job.ipv4);
+                std::process::Command::new("ssh")
+                    .arg(format!("root@{}", job.ipv4))
+                    .status()?;
             }
-        }
+            None => println!("Job {id} not found"),
+        },
     }
 
     Ok(())
