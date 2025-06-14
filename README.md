@@ -20,3 +20,11 @@ ffs ssh <job-id>
 ```
 
 This runs `ssh root@<job-ip>` using the job's public IPv4 address.
+
+## View job logs
+
+Use `ffs tail` to print logs for a job. Add `-f` to follow the logs in real time:
+
+```bash
+ffs tail -f <job-id>
+```

@@ -46,6 +46,9 @@ pub enum ProviderType {
     AWS,
 }
 
+/// Default log file used when tailing logs from a job.
+pub const DEFAULT_LOG_FILE: &str = "/var/log/cloud-init-output.log";
+
 #[async_trait]
 pub trait Provider: Send + Sync {
     async fn start_job(&self, name: &str) -> Result<Job, Box<dyn std::error::Error + Send + Sync>>;
@@ -59,7 +62,7 @@ pub trait Provider: Send + Sync {
     async fn tail(
         &self,
         job_id: &str,
-        filename: &str,
+        follow: bool,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
     async fn scp(
         &self,

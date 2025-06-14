@@ -121,7 +121,7 @@ impl Provider for HetznerProvider {
     async fn tail(
         &self,
         id: &str,
-        filename: &str,
+        follow: bool,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let config = Config::new();
         let mut configuration = Configuration::new();
@@ -141,19 +141,39 @@ impl Provider for HetznerProvider {
         // Open a channel
         let mut channel = sess.channel_session()?;
 
-        // Execute command to read log file
-        channel.exec(&format!("cat {}", &filename))?;
+        // Determine the command based on follow flag
+        let command = if follow {
+            format!("tail -f {}", super::DEFAULT_LOG_FILE)
+        } else {
+            format!("cat {}", super::DEFAULT_LOG_FILE)
+        };
 
-        // Read the output
-        let mut s = String::new();
-        channel.read_to_string(&mut s)?;
+        channel.exec(&command)?;
 
-        // Print the logs
-        println!("{s}");
+        if follow {
+            let mut buffer = [0; 1024];
+            loop {
+                match channel.read(&mut buffer) {
+                    Ok(0) => break,
+                    Ok(n) => {
+                        let output = String::from_utf8_lossy(&buffer[..n]);
+                        print!("{output}");
+                    }
+                    Err(e) => {
+                        if e.kind() == std::io::ErrorKind::WouldBlock {
+                            continue;
+                        }
+                        return Err(Box::new(e));
+                    }
+                }
+            }
+        } else {
+            let mut s = String::new();
+            channel.read_to_string(&mut s)?;
+            print!("{s}");
+        }
 
-        // Close the channel
         channel.wait_close()?;
-        println!("{}", channel.exit_status()?);
 
         Ok(())
     }
