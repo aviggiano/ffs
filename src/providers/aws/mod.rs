@@ -195,7 +195,7 @@ impl Provider for AWSProvider {
     async fn tail(
         &self,
         job_id: &str,
-        filename: &str,
+        follow: bool,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let cfg = config();
 
@@ -207,13 +207,37 @@ impl Provider for AWSProvider {
             sess.userauth_pubkey_file("root", None, Path::new(&cfg.ssh_key_path), None)?;
 
             let mut channel = sess.channel_session()?;
-            channel.exec(&format!("cat {filename}"))?;
+            let command = if follow {
+                format!("tail -f {}", super::DEFAULT_LOG_FILE)
+            } else {
+                format!("cat {}", super::DEFAULT_LOG_FILE)
+            };
+            channel.exec(&command)?;
 
-            let mut s = String::new();
-            channel.read_to_string(&mut s)?;
-            println!("{s}");
+            if follow {
+                let mut buffer = [0; 1024];
+                loop {
+                    match channel.read(&mut buffer) {
+                        Ok(0) => break,
+                        Ok(n) => {
+                            let output = String::from_utf8_lossy(&buffer[..n]);
+                            print!("{}", output);
+                        }
+                        Err(e) => {
+                            if e.kind() == std::io::ErrorKind::WouldBlock {
+                                continue;
+                            }
+                            return Err(Box::new(e));
+                        }
+                    }
+                }
+            } else {
+                let mut s = String::new();
+                channel.read_to_string(&mut s)?;
+                print!("{s}");
+            }
+
             channel.wait_close()?;
-            println!("{}", channel.exit_status()?);
         }
 
         Ok(())

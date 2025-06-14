@@ -12,6 +12,7 @@ toml = "0.5"
 async-trait = "0.1"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-sdk-ec2 = "1"
+clap = { version = "4.0", features = ["derive", "color"] }
 
 
 [dev-dependencies]
