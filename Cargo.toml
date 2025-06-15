@@ -2,6 +2,11 @@
 name = "ffs-cli"
 version = "0.1.0"
 edition = "2021"
+description = "A fast and flexible server management CLI tool for cloud providers"
+license = "MIT"
+repository = "https://github.com/aviggiano/ffs"
+homepage = "https://github.com/aviggiano/ffs"
+documentation = "https://github.com/aviggiano/ffs"
 
 [dependencies]
 hcloud = "0.21.0"
