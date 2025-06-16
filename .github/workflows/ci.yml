@@ -43,6 +43,9 @@ jobs:
       - name: Install cargo-edit
         run: cargo install cargo-edit
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Check current version
         id: current_version
         run: echo "VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_OUTPUT
@@ -50,15 +53,24 @@ jobs:
       - name: Check if version is already published
         id: check_published
         run: |
-          if cargo search --limit 1 $(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name') | grep -q "$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"; then
+          PACKAGE_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
+          CURRENT_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          echo "Checking if $PACKAGE_NAME version $CURRENT_VERSION is already published..."
+          if cargo search --limit 1 "$PACKAGE_NAME" | grep -q "$PACKAGE_NAME = \"$CURRENT_VERSION\""; then
             echo "PUBLISHED=true" >> $GITHUB_OUTPUT
+            echo "Version $CURRENT_VERSION of $PACKAGE_NAME is already published"
           else
             echo "PUBLISHED=false" >> $GITHUB_OUTPUT
+            echo "Version $CURRENT_VERSION of $PACKAGE_NAME is not published yet"
           fi
 
       - name: Bump version
         if: steps.check_published.outputs.PUBLISHED == 'true'
-        run: cargo set-version --bump patch
+        run: |
+          echo "Current version is already published, bumping to next patch version"
+          cargo set-version --bump patch
+          NEW_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          echo "New version: $NEW_VERSION"
 
       - name: Publish to crates.io
         env:

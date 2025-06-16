@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
-use ffs::database::Database;
-use ffs::providers::ProviderFactory;
-use ffs::utils::timestamp;
+use ffs_cli::database::Database;
+use ffs_cli::providers::ProviderFactory;
+use ffs_cli::utils::timestamp;
 
 const DEFAULT_PROVIDER: &str = "hetzner";
 const DEFAULT_JOB_NAME_PREFIX: &str = "ffs-job-";
@@ -9,7 +9,7 @@ const DEFAULT_JOB_NAME_PREFIX: &str = "ffs-job-";
 #[derive(Parser)]
 #[command(name = "ffs")]
 #[command(about = "A CLI tool for managing cloud computing jobs")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,

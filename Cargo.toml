@@ -1,6 +1,6 @@
 [package]
-name = "ffs"
-version = "0.1.0"
+name = "ffs-cli"
+version = "0.1.1"
 edition = "2021"
 description = "A fast and flexible server management CLI tool for cloud providers"
 license = "MIT"
