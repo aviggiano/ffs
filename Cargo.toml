@@ -1,5 +1,5 @@
 [package]
-name = "ffs-cli"
+name = "ffs"
 version = "0.1.0"
 edition = "2021"
 description = "A fast and flexible server management CLI tool for cloud providers"
@@ -11,7 +11,7 @@ documentation = "https://github.com/aviggiano/ffs"
 [dependencies]
 hcloud = "0.21.0"
 serde = { version = "1", features = ["derive"] }
-ssh2 = "0.9"
+ssh2 = { version = "0.9", features = ["vendored-openssl"] }
 tokio = { version = "1", features = ["full"] }
 toml = "0.5"
 async-trait = "0.1"
