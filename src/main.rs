@@ -9,7 +9,7 @@ const DEFAULT_JOB_NAME_PREFIX: &str = "ffs-job-";
 #[derive(Parser)]
 #[command(name = "ffs")]
 #[command(about = "A CLI tool for managing cloud computing jobs")]
-#[command(version = "0.1.0")]
+#[command(version = "0.1.1")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
