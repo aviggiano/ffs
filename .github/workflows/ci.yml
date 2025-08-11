@@ -56,7 +56,7 @@ jobs:
           PACKAGE_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
           CURRENT_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
           echo "Checking if $PACKAGE_NAME version $CURRENT_VERSION is already published..."
-          if cargo search --limit 1 "$PACKAGE_NAME" | grep -q "$PACKAGE_NAME = \"$CURRENT_VERSION\""; then
+          if cargo search --limit 1 "$PACKAGE_NAME" | grep -q "\"$CURRENT_VERSION\""; then
             echo "PUBLISHED=true" >> $GITHUB_OUTPUT
             echo "Version $CURRENT_VERSION of $PACKAGE_NAME is already published"
           else
