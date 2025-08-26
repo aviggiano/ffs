@@ -7,7 +7,7 @@ use ssh2::Session;
 
 use crate::jobs::Job;
 
-const INSTALL_SCRIPT: &str = include_str!("setup.sh");
+const INSTALL_SCRIPT: &str = include_str!(".././setup.sh");
 
 fn install_over_ssh(
     ip: &str,
