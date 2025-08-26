@@ -1,3 +1,7 @@
+#! /bin/bash
+
+set -u
+
 # Update and upgrade
 apt-get update
 apt-get upgrade -y
@@ -22,7 +26,7 @@ rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.1.linux-amd64.tar.gz
 go install github.com/crytic/medusa@latest
 
 # Install Echidna
-ECHIDNA_VERSION="2.2.6"
+ECHIDNA_VERSION="2.2.7"
 wget https://github.com/crytic/echidna/releases/download/v${ECHIDNA_VERSION}/echidna-${ECHIDNA_VERSION}-x86_64-linux.tar.gz
 tar -xzvf echidna-${ECHIDNA_VERSION}-x86_64-linux.tar.gz
 rm echidna-${ECHIDNA_VERSION}-x86_64-linux.tar.gz

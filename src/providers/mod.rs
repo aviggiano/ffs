@@ -7,20 +7,7 @@ use ssh2::Session;
 
 use crate::jobs::Job;
 
-const INSTALL_SCRIPT: &str = r#"#!/bin/bash
-set -e
-apt-get update
-apt-get install -y curl git build-essential pkg-config libssl-dev
-curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-apt-get install -y nodejs
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-source "$HOME/.cargo/env"
-curl -L https://foundry.paradigm.xyz | bash
-"$HOME"/.foundry/bin/foundryup
-"$HOME"/.cargo/bin/cargo install --locked echidna
-"$HOME"/.cargo/bin/cargo install --locked --git https://github.com/crytic/medusa
-"$HOME"/.cargo/bin/cargo install --locked --git https://github.com/crytic/halmos
-"#;
+const INSTALL_SCRIPT: &str = include_str!("setup.sh");
 
 fn install_over_ssh(
     ip: &str,
