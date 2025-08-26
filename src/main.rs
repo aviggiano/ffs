@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
-use ffs_cli::database::Database;
-use ffs_cli::providers::ProviderFactory;
-use ffs_cli::utils::timestamp;
+use ffs::database::Database;
+use ffs::providers::ProviderFactory;
+use ffs::utils::timestamp;
 
 const DEFAULT_PROVIDER: &str = "hetzner";
 const DEFAULT_JOB_NAME_PREFIX: &str = "ffs-job-";
@@ -57,6 +57,8 @@ enum Commands {
         /// ID of the job
         id: String,
     },
+    /// Display version information
+    Version,
 }
 
 #[tokio::main]
@@ -118,6 +120,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }
             None => println!("Job {id} not found"),
         },
+        Commands::Version => {
+            println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        }
     }
 
     Ok(())
