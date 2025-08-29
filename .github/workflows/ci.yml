@@ -28,7 +28,7 @@ jobs:
         run: cargo test --verbose
 
   publish:
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -40,39 +40,37 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Install cargo-edit
-        run: cargo install cargo-edit
-
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Check current version
-        id: current_version
-        run: echo "VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_OUTPUT
+      - name: Get package info
+        id: package_info
+        run: |
+          PACKAGE_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
+          CURRENT_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Package: $PACKAGE_NAME, Version: $CURRENT_VERSION"
 
       - name: Check if version is already published
         id: check_published
         run: |
-          PACKAGE_NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
-          CURRENT_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          PACKAGE_NAME="${{ steps.package_info.outputs.PACKAGE_NAME }}"
+          CURRENT_VERSION="${{ steps.package_info.outputs.CURRENT_VERSION }}"
           echo "Checking if $PACKAGE_NAME version $CURRENT_VERSION is already published..."
-          if cargo search --limit 1 "$PACKAGE_NAME" | grep -q "\"$CURRENT_VERSION\""; then
+          
+          # Use cargo search and check if the exact version exists
+          if cargo search --limit 1 "$PACKAGE_NAME" | grep -q "= \"$CURRENT_VERSION\""; then
             echo "PUBLISHED=true" >> $GITHUB_OUTPUT
             echo "Version $CURRENT_VERSION of $PACKAGE_NAME is already published"
+            exit 1
           else
             echo "PUBLISHED=false" >> $GITHUB_OUTPUT
             echo "Version $CURRENT_VERSION of $PACKAGE_NAME is not published yet"
           fi
 
-      - name: Bump version
-        if: steps.check_published.outputs.PUBLISHED == 'true'
-        run: |
-          echo "Current version is already published, bumping to next patch version"
-          cargo set-version --bump patch
-          NEW_VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          echo "New version: $NEW_VERSION"
-
       - name: Publish to crates.io
+        if: steps.check_published.outputs.PUBLISHED == 'false'
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish --no-verify --allow-dirty
+        run: cargo publish
