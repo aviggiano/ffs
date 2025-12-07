@@ -38,7 +38,7 @@ Options:
 After listing jobs with `ffs-cli list`, you can quickly connect to one by ID:
 
 ```bash
-ffs ssh <job-id>
+ffs-cli ssh <job-id>
 ```
 
 This runs `ssh root@<job-ip>` using the job's public IPv4 address.
