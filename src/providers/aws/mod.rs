@@ -93,8 +93,14 @@ impl Provider for AWSProvider {
 
         let key_path = cfg.ssh_key_path.clone();
         tokio::spawn(async move {
-            let _ = tokio::task::spawn_blocking(move || super::install_over_ssh(&ipv4, &key_path))
-                .await;
+            let ipv4_msg = ipv4.clone();
+            match tokio::task::spawn_blocking(move || super::install_over_ssh(&ipv4, &key_path))
+                .await
+            {
+                Ok(Ok(())) => println!("Setup completed successfully for {ipv4_msg}"),
+                Ok(Err(e)) => eprintln!("Failed to install setup on {ipv4_msg}: {e}"),
+                Err(e) => eprintln!("Task panicked while installing setup on {ipv4_msg}: {e}"),
+            }
         });
 
         Ok(job)

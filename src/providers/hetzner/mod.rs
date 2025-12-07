@@ -42,8 +42,13 @@ impl Provider for HetznerProvider {
         let ip = job.ipv4.clone();
         let key_path = config.ssh_key_path.clone();
         tokio::spawn(async move {
-            let _ =
-                tokio::task::spawn_blocking(move || super::install_over_ssh(&ip, &key_path)).await;
+            let ip_msg = ip.clone();
+            match tokio::task::spawn_blocking(move || super::install_over_ssh(&ip, &key_path)).await
+            {
+                Ok(Ok(())) => println!("Setup completed successfully for {ip_msg}"),
+                Ok(Err(e)) => eprintln!("Failed to install setup on {ip_msg}: {e}"),
+                Err(e) => eprintln!("Task panicked while installing setup on {ip_msg}: {e}"),
+            }
         });
 
         Ok(job)

@@ -13,6 +13,35 @@ fn install_over_ssh(
     ip: &str,
     key_path: &str,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("Attempting to connect to {ip} for setup installation...");
+
+    // Retry SSH connection up to 30 times with 10 second delays (5 minutes total)
+    let mut last_error = None;
+    for attempt in 1..=30 {
+        println!("SSH connection attempt {attempt}/30 to {ip}...");
+
+        match try_install_ssh(ip, key_path) {
+            Ok(()) => {
+                println!("Successfully installed setup.sh on {ip}");
+                return Ok(());
+            }
+            Err(e) => {
+                println!("Attempt {attempt} failed: {e}");
+                last_error = Some(e);
+                if attempt < 30 {
+                    std::thread::sleep(std::time::Duration::from_secs(10));
+                }
+            }
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| "Failed to connect after 30 attempts".into()))
+}
+
+fn try_install_ssh(
+    ip: &str,
+    key_path: &str,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let tcp = TcpStream::connect((ip, 22))?;
     let mut sess = Session::new()?;
     sess.set_tcp_stream(tcp);
@@ -24,6 +53,11 @@ fn install_over_ssh(
     channel.write_all(INSTALL_SCRIPT.as_bytes())?;
     channel.send_eof()?;
     channel.wait_close()?;
+
+    let exit_status = channel.exit_status()?;
+    if exit_status != 0 {
+        return Err(format!("Setup script exited with status {exit_status}").into());
+    }
 
     Ok(())
 }
